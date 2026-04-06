@@ -31,15 +31,13 @@ architecture rtl of ADC_Peripheral is
     constant ADDR_ADC_CTRL   : std_logic_vector(10 downto 0) := "00011000000"; -- 0xC0, control
     constant ADDR_ADC_STATUS : std_logic_vector(10 downto 0) := "00011000001"; -- 0xC1, status
     constant ADDR_ADC_DATA   : std_logic_vector(10 downto 0) := "00011000010"; -- 0xC2, ADC data
-    -- Chan_Info is the info of the channel of the last completed conversion
-    constant ADDR_CHAN_INFO  : std_logic_vector(10 downto 0) := "00011000011"; -- 0xC3
+    -- ADC_CHANNEL stores the currently selected channel for the next conversion
+    constant ADDR_ADC_CHANNEL  : std_logic_vector(10 downto 0) := "00011000011"; -- 0xC3
 
     -- Internal storage elements / registers for peripheral
     -- channel_reg stores the current ADC channel selected
     signal channel_reg      : std_logic_vector(2 downto 0) := (others => '0');
-    -- last_channel_reg stores the ADC channel previously converted
-    signal last_channel_reg : std_logic_vector(2 downto 0) := (others => '0');
-    -- data_reg stores the ADC channel previously converted's data
+    -- data_reg stores the most recent conversion result
     signal data_reg         : std_logic_vector(11 downto 0) := (others => '0');
     -- ready_reg is the flag to let user know new data is available to pull
     signal ready_reg        : std_logic := '0';
@@ -83,7 +81,6 @@ begin
         -- reset everything to 0
         if resetn = '0' then
             channel_reg      <= (others => '0');
-            last_channel_reg <= (others => '0');
             data_reg         <= (others => '0');
             ready_reg        <= '0';
             start_pulse      <= '0';
@@ -101,18 +98,15 @@ begin
             if (busy_d = '1' and adc_busy = '0') then
                 data_reg         <= adc_rx_data; -- New ADC data stored
                 ready_reg        <= '1'; -- flag to show ready
-                last_channel_reg <= channel_reg; -- which channel produced it
             end if;
 
             -- Handle writes to ADC_CTRL
             --
             -- Register bit mapping:
-            -- io_data(4 downto 2) = channel
             -- io_data(1)          = clear_ready
             -- io_data(0)          = start
             ----------------------------------------------------------------
             if io_write = '1' and io_addr = ADDR_ADC_CTRL then
-                channel_reg <= io_data(4 downto 2);
 
                 if io_data(1) = '1' then
                     ready_reg <= '0'; -- Read the current data
@@ -121,6 +115,10 @@ begin
                 if io_data(0) = '1' and adc_busy = '0' then
                     start_pulse <= '1'; -- Start the cycle
                 end if;
+            end if;
+
+            if io_write = '1' and io_addr = ADDR_ADC_CHANNEL then
+                channel_reg <= io_data(4 downto 2);
             end if;
         end if;
     end process;
@@ -143,9 +141,9 @@ begin
                 when ADDR_ADC_DATA =>
                     io_q(11 downto 0) <= data_reg;
 
-                -- SCOMP reads registers and returns channel from last conversion
-                when ADDR_CHAN_INFO =>
-                    io_q(2 downto 0) <= last_channel_reg;
+                -- SCOMP reads registers and returns channel currently selected
+                when ADDR_ADC_CHANNEL =>
+                    io_q(4 downto 2) <= channel_reg;
 
                 when others =>
                     io_q <= (others => '0');
