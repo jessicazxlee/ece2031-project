@@ -1,0 +1,9 @@
+ADCTest/db/
+ADCTest/incremental_db/
+ADCTest/output_files/
+*.qws
+*.sof
+*.pof
+*.rpt
+*.summary
+*.smsg
