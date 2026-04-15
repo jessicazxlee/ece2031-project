@@ -114,22 +114,25 @@ DisplayTarget:
 ; 5. Shift right by 4 so 12-bit ADC becomes 8-bit
 ; =========================================================
 ReadADC:
-    LOAD ADCChannel0
+    LOADI 0
     OUT ADC_CHAN           ; Select ADC channel 0
 
-    LOAD StartCmd
-    OUT ADC_CTRL           ; Start ADC conversion
+    LOADI 2
+    OUT ADC_CTRL           ; CLEAR_READY
+
+    LOADI 1
+    OUT ADC_CTRL           ; START conversion
 
 PollADC:
     IN ADC_STAT
-    AND DoneMask
-    JZERO PollADC          ; Wait until conversion is complete
+    AND OneVal             ; Check READY bit
+    JZERO PollADC          ; Wait until ready
 
     IN ADC_DATA
-    STORE ADCValue         ; Read 12-bit ADC value
+    STORE ADCValue         ; Read ADC result
 
     LOAD ADCValue
-    SHIFT -4
+    SHIFT -4               ; Scale 12-bit ADC to 8-bit
     AND Mask8Bit
     STORE ADCValue
     RETURN
@@ -226,10 +229,10 @@ Hex2        EQU 006
 Hex3        EQU 007
 
 ; ADC peripheral register addresses
-ADC_CHAN    EQU &HC0
-ADC_CTRL    EQU &HC1
-ADC_STAT    EQU &HC2
-ADC_DATA    EQU &HC3
+ADC_CTRL    EQU &HC0
+ADC_STAT    EQU &HC1
+ADC_DATA    EQU &HC2
+ADC_CHAN    EQU &HC3
 
 
 ; =========================================================
