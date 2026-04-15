@@ -5,145 +5,136 @@ ADDRESS_RADIX=HEX;
 DATA_RADIX=HEX;
 
 CONTENT BEGIN
-0000: 800E; --     CALL Init
-0001: 8018; --     CALL WaitAllDown        ; Make sure switches are reset before next round
-0002: 801C; --     CALL GenerateTarget     ; Generate random target T
-0003: 8027; --     CALL DisplayTarget      ; Show target on HEX1:HEX0
-0004: 8037; --     CALL DisplayScore       ; Show score on HEX5:HEX4
-0005: 803F; --     CALL ReadADC            ; Read analog input and scale to 8 bits
-0006: 802F; --     CALL DisplayCurrentValue ; Show current ADC/player value on HEX3:HEX2
-0007: 804F; --     CALL CompareToTarget    ; Check if ADC value matches target
-0008: 805F; --     CALL DisplayFeedback    ; Show too low / too high / win on LEDs
-0009: 0888; --     LOAD WinFlag            ; Keep looping until player wins
-000A: 7005; --     JZERO GameLoop
-000B: 806D; --     CALL WinPause           ; Hold the win display briefly
-000C: 8075; --     CALL IncrementScore     ; Increase score if player wins
-000D: 5801; --     JUMP MainLoop           ; Start a new round
-000E: 087B; --     LOAD ZeroVal
-000F: 1085; --     STORE Counter
-0010: 1086; --     STORE Target
-0011: 1087; --     STORE ADCValue
-0012: 1088; --     STORE WinFlag
-0013: 1089; --     STORE Score
-0014: 108A; --     STORE Diff
-0015: 108B; --     STORE DelayCount
-0016: 8037; --     CALL DisplayScore
+0000: 800F; --     CALL Init
+0001: 8018; --     CALL WaitAllDown        ; Wait until all switches are off
+0002: 801C; --     CALL GenerateTarget     ; Generate random target
+0003: 8027; --     CALL DisplayTarget      ; Show target on HEX3:HEX2
+0004: 0872; --     LOAD ZeroVal
+0005: 9801; --     OUT LEDs                ; Clear LEDs at the start of a new round
+0006: 8037; --     CALL ReadADC            ; Read analog input from ADC
+0007: 802F; --     CALL DisplayCurrentValue ; Show current ADC value on HEX1:HEX0
+0008: 8047; --     CALL CompareToTarget    ; Check if ADC value is within range
+0009: 8057; --     CALL DisplayFeedback    ; Show too low / too high / win on LEDs
+000A: 087F; --     LOAD WinFlag
+000B: 7006; --     JZERO GameLoop          ; Keep playing until player wins
+000C: 8065; --     CALL WinPause           ; Hold win display briefly
+000D: 806D; --     CALL IncrementScore     ; Increment internal score
+000E: 5801; --     JUMP MainLoop           ; Start next round
+000F: 0872; --     LOAD ZeroVal
+0010: 107C; --     STORE Counter
+0011: 107D; --     STORE Target
+0012: 107E; --     STORE ADCValue
+0013: 107F; --     STORE WinFlag
+0014: 1080; --     STORE Score
+0015: 1081; --     STORE Diff
+0016: 1082; --     STORE DelayCount
 0017: 8800; --     RETURN
 0018: 9000; --     IN Switches
 0019: 9801; --     OUT LEDs
 001A: 7818; --     JNZ WaitAllDown
 001B: 8800; --     RETURN
-001C: 0885; --     LOAD Counter
+001C: 087C; --     LOAD Counter
 001D: 3001; --     ADDI 1
-001E: 1085; --     STORE Counter
+001E: 107C; --     STORE Counter
 001F: 9000; --     IN Switches
 0020: 9801; --     OUT LEDs
-0021: 3880; --     AND SW9Mask             ; Check if SW9 is high
-0022: 701C; --     JZERO GenLoop           ; If not, keep counting
-0023: 0885; --     LOAD Counter
-0024: 387E; --     AND Mask8Bit            ; Target = Counter mod 256
-0025: 1086; --     STORE Target
+0021: 3877; --     AND SW9Mask
+0022: 701C; --     JZERO GenLoop
+0023: 087C; --     LOAD Counter
+0024: 3875; --     AND Mask8Bit
+0025: 107D; --     STORE Target
 0026: 8800; --     RETURN
-0027: 0886; --     LOAD Target
-0028: 387F; --     AND LowNibbleMask
-0029: 9804; --     OUT Hex0                ; Display low nibble
-002A: 0886; --     LOAD Target
+0027: 087D; --     LOAD Target
+0028: 3876; --     AND LowNibbleMask
+0029: 9806; --     OUT Hex2                ; low nibble of target
+002A: 087D; --     LOAD Target
 002B: 5014; --     SHIFT -4
-002C: 387F; --     AND LowNibbleMask
-002D: 9805; --     OUT Hex1                ; Display high nibble
+002C: 3876; --     AND LowNibbleMask
+002D: 9807; --     OUT Hex3                ; high nibble of target
 002E: 8800; --     RETURN
-002F: 0887; --     LOAD ADCValue
-0030: 387F; --     AND LowNibbleMask
-0031: 9806; --     OUT Hex2                ; Display low nibble
-0032: 0887; --     LOAD ADCValue
+002F: 087E; --     LOAD ADCValue
+0030: 3876; --     AND LowNibbleMask
+0031: 9804; --     OUT Hex0                ; low nibble of ADC value
+0032: 087E; --     LOAD ADCValue
 0033: 5014; --     SHIFT -4
-0034: 387F; --     AND LowNibbleMask
-0035: 9807; --     OUT Hex3                ; Display high nibble
+0034: 3876; --     AND LowNibbleMask
+0035: 9805; --     OUT Hex1                ; high nibble of ADC value
 0036: 8800; --     RETURN
-0037: 0889; --     LOAD Score
-0038: 387F; --     AND LowNibbleMask
-0039: 9808; --     OUT Hex4                ; Display low nibble
-003A: 0889; --     LOAD Score
-003B: 5014; --     SHIFT -4
-003C: 387F; --     AND LowNibbleMask
-003D: 9809; --     OUT Hex5                ; Display high nibble
-003E: 8800; --     RETURN
-003F: 1800; --     LOADI 0
-0040: 98C3; --     OUT ADC_CHAN            ; Select ADC channel 0
-0041: 1802; --     LOADI 2
-0042: 98C0; --     OUT ADC_CTRL            ; CLEAR_READY
-0043: 1801; --     LOADI 1
-0044: 98C0; --     OUT ADC_CTRL            ; START conversion
-0045: 90C1; --     IN ADC_STAT
-0046: 387C; --     AND OneVal              ; Check READY bit
-0047: 7045; --     JZERO PollADC           ; Wait until ready
-0048: 90C2; --     IN ADC_DATA
-0049: 1087; --     STORE ADCValue          ; Read ADC result
-004A: 0887; --     LOAD ADCValue
-004B: 5014; --     SHIFT -4                ; Scale 12-bit ADC to 8-bit
-004C: 387E; --     AND Mask8Bit
-004D: 1087; --     STORE ADCValue
-004E: 8800; --     RETURN
-004F: 087B; --     LOAD ZeroVal
-0050: 1088; --     STORE WinFlag
-0051: 0887; --     LOAD ADCValue
-0052: 2886; --     SUB Target
-0053: 108A; --     STORE Diff
-0054: 6858; --     JPOS DiffPositive
-0055: 087B; --     LOAD ZeroVal
-0056: 288A; --     SUB Diff
-0057: 108A; --     STORE Diff
-0058: 088A; --     LOAD Diff
-0059: 287D; --     SUB Tolerance
-005A: 685E; --     JPOS NotWin             ; If Diff > Tolerance, no win
-005B: 087C; --     LOAD OneVal
-005C: 1088; --     STORE WinFlag           ; Otherwise, player wins
-005D: 8800; --     RETURN
-005E: 8800; --     RETURN
-005F: 0888; --     LOAD WinFlag
-0060: 7064; --     JZERO CheckHighLow
-0061: 0883; --     LOAD AllOn
-0062: 9801; --     OUT LEDs
-0063: 8800; --     RETURN
-0064: 0887; --     LOAD ADCValue
-0065: 2886; --     SUB Target
-0066: 686A; --     JPOS TooHigh
-0067: 0881; --     LOAD LED0On
-0068: 9801; --     OUT LEDs
-0069: 8800; --     RETURN
-006A: 0882; --     LOAD LED1On
-006B: 9801; --     OUT LEDs
+0037: 1800; --     LOADI 0
+0038: 98C3; --     OUT ADC_CHAN            ; Select ADC channel 0
+0039: 1802; --     LOADI 2
+003A: 98C0; --     OUT ADC_CTRL            ; CLEAR_READY
+003B: 1801; --     LOADI 1
+003C: 98C0; --     OUT ADC_CTRL            ; START conversion
+003D: 90C1; --     IN ADC_STAT
+003E: 3873; --     AND OneVal              ; Check READY bit
+003F: 703D; --     JZERO PollADC           ; Wait until ready
+0040: 90C2; --     IN ADC_DATA
+0041: 107E; --     STORE ADCValue          ; Read ADC result
+0042: 087E; --     LOAD ADCValue
+0043: 5014; --     SHIFT -4                ; Scale 12-bit ADC to 8-bit
+0044: 3875; --     AND Mask8Bit
+0045: 107E; --     STORE ADCValue
+0046: 8800; --     RETURN
+0047: 0872; --     LOAD ZeroVal
+0048: 107F; --     STORE WinFlag
+0049: 087E; --     LOAD ADCValue
+004A: 287D; --     SUB Target
+004B: 1081; --     STORE Diff
+004C: 6850; --     JPOS DiffPositive
+004D: 0872; --     LOAD ZeroVal
+004E: 2881; --     SUB Diff
+004F: 1081; --     STORE Diff
+0050: 0881; --     LOAD Diff
+0051: 2874; --     SUB Tolerance
+0052: 6856; --     JPOS NotWin
+0053: 0873; --     LOAD OneVal
+0054: 107F; --     STORE WinFlag
+0055: 8800; --     RETURN
+0056: 8800; --     RETURN
+0057: 087F; --     LOAD WinFlag
+0058: 705C; --     JZERO CheckHighLow
+0059: 087A; --     LOAD AllOn
+005A: 9801; --     OUT LEDs
+005B: 8800; --     RETURN
+005C: 087E; --     LOAD ADCValue
+005D: 287D; --     SUB Target
+005E: 6862; --     JPOS TooHigh
+005F: 0878; --     LOAD LED0On
+0060: 9801; --     OUT LEDs
+0061: 8800; --     RETURN
+0062: 0879; --     LOAD LED1On
+0063: 9801; --     OUT LEDs
+0064: 8800; --     RETURN
+0065: 087B; --     LOAD DelayCountInit
+0066: 1082; --     STORE DelayCount
+0067: 0882; --     LOAD DelayCount
+0068: 37FF; --     ADDI -1
+0069: 1082; --     STORE DelayCount
+006A: 706C; --     JZERO WinPauseDone
+006B: 5867; --     JUMP WinPauseLoop
 006C: 8800; --     RETURN
-006D: 0884; --     LOAD DelayCountInit
-006E: 108B; --     STORE DelayCount
-006F: 088B; --     LOAD DelayCount
-0070: 37FF; --     ADDI -1
-0071: 108B; --     STORE DelayCount
-0072: 7074; --     JZERO WinPauseDone
-0073: 586F; --     JUMP WinPauseLoop
-0074: 8800; --     RETURN
-0075: 0889; --     LOAD Score
-0076: 3001; --     ADDI 1
-0077: 387E; --     AND Mask8Bit
-0078: 1089; --     STORE Score
-0079: 8037; --     CALL DisplayScore
-007A: 8800; --     RETURN
-007B: 0000; -- ZeroVal:        DW 0
-007C: 0001; -- OneVal:         DW 1
-007D: 0004; -- Tolerance:      DW 4         ; Win if within ±4 of target
-007E: 00FF; -- Mask8Bit:       DW &H00FF
-007F: 000F; -- LowNibbleMask:  DW &H000F
-0080: 0200; -- SW9Mask:        DW &H0200    ; Switch 9
-0081: 0001; -- LED0On:         DW &H0001
-0082: 0002; -- LED1On:         DW &H0002
-0083: 03FF; -- AllOn:          DW &H03FF
-0084: 1388; -- DelayCountInit: DW 5000      ; Adjust if pause is too short or too long
-0085: 0000; -- Counter:        DW 0         ; Free-running counter for pseudo-random target
-0086: 0000; -- Target:         DW 0         ; Random target
-0087: 0000; -- ADCValue:       DW 0         ; Scaled ADC result
-0088: 0000; -- WinFlag:        DW 0         ; 1 if player wins, 0 otherwise
-0089: 0000; -- Score:          DW 0         ; Running score
-008A: 0000; -- Diff:           DW 0         ; Temporary difference storage
-008B: 0000; -- DelayCount:     DW 0         ; Used in WinPause
-[008C..07FF] : 0000; -- [empty memory]
+006D: 0880; --     LOAD Score
+006E: 3001; --     ADDI 1
+006F: 3875; --     AND Mask8Bit
+0070: 1080; --     STORE Score
+0071: 8800; --     RETURN
+0072: 0000; -- ZeroVal:        DW 0
+0073: 0001; -- OneVal:         DW 1
+0074: 0004; -- Tolerance:      DW 4
+0075: 00FF; -- Mask8Bit:       DW &H00FF
+0076: 000F; -- LowNibbleMask:  DW &H000F
+0077: 0200; -- SW9Mask:        DW &H0200
+0078: 0001; -- LED0On:         DW &H0001
+0079: 0002; -- LED1On:         DW &H0002
+007A: 03FF; -- AllOn:          DW &H03FF
+007B: 1388; -- DelayCountInit: DW 5000
+007C: 0000; -- Counter:        DW 0
+007D: 0000; -- Target:         DW 0
+007E: 0000; -- ADCValue:       DW 0
+007F: 0000; -- WinFlag:        DW 0
+0080: 0000; -- Score:          DW 0
+0081: 0000; -- Diff:           DW 0
+0082: 0000; -- DelayCount:     DW 0
+[0083..07FF] : 0000; -- [empty memory]
 END;

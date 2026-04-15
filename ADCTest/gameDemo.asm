@@ -4,9 +4,13 @@ ORG 0
 ; ADC Target Game
 ; ---------------------------------------------------------
 ; Display layout:
-;   HEX5 HEX4 = Score
-;   HEX3 HEX2 = Current ADC/player value
-;   HEX1 HEX0 = Target
+;   HEX3 HEX2 = Target
+;   HEX1 HEX0 = Current ADC/player value
+;
+; LED behavior:
+;   LED0 = too low
+;   LED1 = too high
+;   All LEDs on = within target range / win
 ;
 ; Game flow:
 ; 1. Initialize variables
@@ -15,7 +19,7 @@ ORG 0
 ; 4. Display the target
 ; 5. Read ADC input through the peripheral
 ; 6. Scale ADC value from 12 bits to 8 bits
-; 7. Display the current value
+; 7. Display current ADC value
 ; 8. Compare ADC value to target
 ; 9. Show feedback on LEDs
 ; 10. If player wins, pause, increment score, and start next round
@@ -25,23 +29,25 @@ Start:
     CALL Init
 
 MainLoop:
-    CALL WaitAllDown        ; Make sure switches are reset before next round
-    CALL GenerateTarget     ; Generate random target T
-    CALL DisplayTarget      ; Show target on HEX1:HEX0
-    CALL DisplayScore       ; Show score on HEX5:HEX4
+    CALL WaitAllDown        ; Wait until all switches are off
+    CALL GenerateTarget     ; Generate random target
+    CALL DisplayTarget      ; Show target on HEX3:HEX2
+
+    LOAD ZeroVal
+    OUT LEDs                ; Clear LEDs at the start of a new round
 
 GameLoop:
-    CALL ReadADC            ; Read analog input and scale to 8 bits
-    CALL DisplayCurrentValue ; Show current ADC/player value on HEX3:HEX2
-    CALL CompareToTarget    ; Check if ADC value matches target
+    CALL ReadADC            ; Read analog input from ADC
+    CALL DisplayCurrentValue ; Show current ADC value on HEX1:HEX0
+    CALL CompareToTarget    ; Check if ADC value is within range
     CALL DisplayFeedback    ; Show too low / too high / win on LEDs
 
-    LOAD WinFlag            ; Keep looping until player wins
-    JZERO GameLoop
+    LOAD WinFlag
+    JZERO GameLoop          ; Keep playing until player wins
 
-    CALL WinPause           ; Hold the win display briefly
-    CALL IncrementScore     ; Increase score if player wins
-    JUMP MainLoop           ; Start a new round
+    CALL WinPause           ; Hold win display briefly
+    CALL IncrementScore     ; Increment internal score
+    JUMP MainLoop           ; Start next round
 
 
 ; =========================================================
@@ -57,8 +63,6 @@ Init:
     STORE Score
     STORE Diff
     STORE DelayCount
-
-    CALL DisplayScore
     RETURN
 
 
@@ -79,7 +83,6 @@ WaitAllDown:
 ; Uses a free-running counter as a random generator.
 ; Counter keeps increasing until SW9 is raised.
 ; Then Counter mod 256 becomes the target.
-; Similar to Lab8
 ; =========================================================
 GenerateTarget:
 GenLoop:
@@ -89,72 +92,54 @@ GenLoop:
 
     IN Switches
     OUT LEDs
-    AND SW9Mask             ; Check if SW9 is high
-    JZERO GenLoop           ; If not, keep counting
+    AND SW9Mask
+    JZERO GenLoop
 
     LOAD Counter
-    AND Mask8Bit            ; Target = Counter mod 256
+    AND Mask8Bit
     STORE Target
     RETURN
 
 
 ; =========================================================
 ; DisplayTarget
-; Displays the 8-bit target across two HEX displays.
-; HEX1 = high nibble
-; HEX0 = low nibble
+; Displays the 8-bit target across HEX3:HEX2
+; HEX3 = high nibble
+; HEX2 = low nibble
 ; =========================================================
 DisplayTarget:
     LOAD Target
     AND LowNibbleMask
-    OUT Hex0                ; Display low nibble
+    OUT Hex2                ; low nibble of target
 
     LOAD Target
     SHIFT -4
     AND LowNibbleMask
-    OUT Hex1                ; Display high nibble
+    OUT Hex3                ; high nibble of target
     RETURN
 
 
 ; =========================================================
 ; DisplayCurrentValue
-; Displays the current ADC/player value across two HEX displays.
-; HEX3 = high nibble
-; HEX2 = low nibble
+; Displays the current ADC/player value across HEX1:HEX0
+; HEX1 = high nibble
+; HEX0 = low nibble
 ; =========================================================
 DisplayCurrentValue:
     LOAD ADCValue
     AND LowNibbleMask
-    OUT Hex2                ; Display low nibble
+    OUT Hex0                ; low nibble of ADC value
 
     LOAD ADCValue
     SHIFT -4
     AND LowNibbleMask
-    OUT Hex3                ; Display high nibble
-    RETURN
-
-
-; =========================================================
-; DisplayScore
-; Displays the score across two HEX displays.
-; HEX5 = high nibble
-; HEX4 = low nibble
-; =========================================================
-DisplayScore:
-    LOAD Score
-    AND LowNibbleMask
-    OUT Hex4                ; Display low nibble
-
-    LOAD Score
-    SHIFT -4
-    AND LowNibbleMask
-    OUT Hex5                ; Display high nibble
+    OUT Hex1                ; high nibble of ADC value
     RETURN
 
 
 ; =========================================================
 ; ReadADC
-; Reads the ADC peripheral using the register interface:
+; Reads the ADC peripheral using the known working sequence:
 ; 1. Select ADC channel
 ; 2. Clear READY
 ; 3. Start conversion
@@ -189,11 +174,8 @@ PollADC:
 
 ; =========================================================
 ; CompareToTarget
-; Compares ADCValue directly to Target.
-; Uses tolerance-based win condition:
-;   win if |ADCValue - Target| <= Tolerance
-; With Tolerance = 4, the player wins if the ADC value
-; is within ±4 of the target.
+; Win if |ADCValue - Target| <= Tolerance
+; With Tolerance = 4, the player wins if ADCValue is within ±4
 ; =========================================================
 CompareToTarget:
     LOAD ZeroVal
@@ -203,7 +185,7 @@ CompareToTarget:
     SUB Target
     STORE Diff
 
-    ; If difference is negative, take absolute value
+    ; Convert negative difference to positive
     JPOS DiffPositive
     LOAD ZeroVal
     SUB Diff
@@ -212,10 +194,10 @@ CompareToTarget:
 DiffPositive:
     LOAD Diff
     SUB Tolerance
-    JPOS NotWin             ; If Diff > Tolerance, no win
+    JPOS NotWin
 
     LOAD OneVal
-    STORE WinFlag           ; Otherwise, player wins
+    STORE WinFlag
     RETURN
 
 NotWin:
@@ -226,8 +208,8 @@ NotWin:
 ; DisplayFeedback
 ; LED behavior:
 ; - Win: all LEDs on
-; - ADCValue < Target: LED0 on (too low)
-; - ADCValue > Target: LED1 on (too high)
+; - ADCValue < Target: LED0 on
+; - ADCValue > Target: LED1 on
 ; =========================================================
 DisplayFeedback:
     LOAD WinFlag
@@ -255,7 +237,7 @@ TooHigh:
 
 ; =========================================================
 ; WinPause
-; Holds the win display briefly before starting the next round
+; Holds the win display briefly before starting next round
 ; =========================================================
 WinPause:
     LOAD DelayCountInit
@@ -274,15 +256,14 @@ WinPauseDone:
 
 ; =========================================================
 ; IncrementScore
-; Increase score after a successful round, then redisplay score
+; Increase score after a successful round
+; Score is kept internally for now
 ; =========================================================
 IncrementScore:
     LOAD Score
     ADDI 1
     AND Mask8Bit
     STORE Score
-
-    CALL DisplayScore
     RETURN
 
 
@@ -295,8 +276,6 @@ Hex0        EQU 004
 Hex1        EQU 005
 Hex2        EQU 006
 Hex3        EQU 007
-Hex4        EQU 008
-Hex5        EQU 009
 
 ; ADC peripheral register addresses
 ADC_CTRL    EQU &HC0
@@ -310,24 +289,23 @@ ADC_CHAN    EQU &HC3
 ; =========================================================
 ZeroVal:        DW 0
 OneVal:         DW 1
-Tolerance:      DW 4         ; Win if within ±4 of target
+Tolerance:      DW 4
 Mask8Bit:       DW &H00FF
 LowNibbleMask:  DW &H000F
-SW9Mask:        DW &H0200    ; Switch 9
+SW9Mask:        DW &H0200
 LED0On:         DW &H0001
 LED1On:         DW &H0002
 AllOn:          DW &H03FF
-
-DelayCountInit: DW 5000      ; Adjust if pause is too short or too long
+DelayCountInit: DW 5000
 
 
 ; =========================================================
 ; Variables
 ; =========================================================
-Counter:        DW 0         ; Free-running counter for pseudo-random target
-Target:         DW 0         ; Random target
-ADCValue:       DW 0         ; Scaled ADC result
-WinFlag:        DW 0         ; 1 if player wins, 0 otherwise
-Score:          DW 0         ; Running score
-Diff:           DW 0         ; Temporary difference storage
-DelayCount:     DW 0         ; Used in WinPause
+Counter:        DW 0
+Target:         DW 0
+ADCValue:       DW 0
+WinFlag:        DW 0
+Score:          DW 0
+Diff:           DW 0
+DelayCount:     DW 0
