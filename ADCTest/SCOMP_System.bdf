@@ -89,23 +89,6 @@ on the Quartus Prime software download page.
 	(annotation_block (location)(rect 8 952 72 968))
 )
 (pin
-	(input)
-	(rect -24 712 144 728)
-	(text "INPUT" (rect 125 0 153 9)(font "Arial" (font_size 6)))
-	(text "KEY3" (rect 5 0 32 11)(font "Arial" ))
-	(pt 168 8)
-	(drawing
-		(line (pt 84 12)(pt 109 12))
-		(line (pt 84 4)(pt 109 4))
-		(line (pt 113 8)(pt 168 8))
-		(line (pt 84 12)(pt 84 4))
-		(line (pt 109 4)(pt 113 8))
-		(line (pt 109 12)(pt 113 8))
-	)
-	(text "VCC" (rect 128 7 148 16)(font "Arial" (font_size 6)))
-	(annotation_block (location)(rect -96 728 -24 744))
-)
-(pin
 	(output)
 	(rect 912 368 1088 384)
 	(text "OUTPUT" (rect 1 0 39 9)(font "Arial" (font_size 6)))
@@ -699,31 +682,6 @@ on the Quartus Prime software download page.
 	)
 )
 (symbol
-	(rect 144 704 192 736)
-	(text "NOT" (rect 1 0 21 9)(font "Arial" (font_size 6)))
-	(text "inst17" (rect 3 21 33 33)(font "Intel Clear" ))
-	(port
-		(pt 0 16)
-		(input)
-		(text "IN" (rect 2 7 14 18)(font "Courier New" (bold))(invisible))
-		(text "IN" (rect 2 7 14 18)(font "Courier New" (bold))(invisible))
-		(line (pt 0 16)(pt 13 16))
-	)
-	(port
-		(pt 48 16)
-		(output)
-		(text "OUT" (rect 32 7 52 18)(font "Courier New" (bold))(invisible))
-		(text "OUT" (rect 32 7 52 18)(font "Courier New" (bold))(invisible))
-		(line (pt 39 16)(pt 48 16))
-	)
-	(drawing
-		(line (pt 13 25)(pt 13 7))
-		(line (pt 13 7)(pt 31 16))
-		(line (pt 13 25)(pt 31 16))
-		(circle (rect 31 12 39 20))
-	)
-)
-(symbol
 	(rect 240 832 480 976)
 	(text "ADC_PERIPHERAL" (rect 5 0 100 11)(font "Arial" ))
 	(text "inst3" (rect 8 128 32 140)(font "Intel Clear" ))
@@ -1051,18 +1009,6 @@ on the Quartus Prime software download page.
 	(pt 736 704)
 )
 (connector
-	(pt 296 744)
-	(pt 208 744)
-)
-(connector
-	(pt 208 720)
-	(pt 192 720)
-)
-(connector
-	(pt 208 744)
-	(pt 208 720)
-)
-(connector
 	(text "IO_DATA[15..0]" (rect 490 848 565 860)(font "Intel Clear" ))
 	(pt 560 864)
 	(pt 480 864)
@@ -1101,7 +1047,7 @@ on the Quartus Prime software download page.
 	(section (rect 0 48 368 72)(text "DESIGNER" (rect 2 0 57 11)(font "Arial" ))(text "Kevin Johnson, Tom Collins" (rect 56 2 290 20)(font "Arial" (font_size 12)))(border))
 	(section (rect 0 72 280 96)(text "NUMBER" (rect 2 0 48 11)(font "Arial" ))(text "1.00" (rect 56 1 86 16)(font "Arial" (font_size 10)))(border))
 	(section (rect 280 72 368 96)(text "REV" (rect 2 1 24 12)(font "Arial" ))(text "A" (rect 43 1 53 16)(font "Arial" (font_size 10)))(border))
-	(section (rect 0 96 240 120)(text "DATE" (rect 2 0 30 11)(font "Arial" ))(text "Wed Apr  8 20:09:33 2026" (rect 56 3 235 18)(font "Arial" (font_size 10)))(date)(border))
+	(section (rect 0 96 240 120)(text "DATE" (rect 2 0 30 11)(font "Arial" ))(text "Wed Apr 15 19:12:59 2026" (rect 56 3 240 18)(font "Arial" (font_size 10)))(date)(border))
 	(section (rect 240 96 310 120)(text "SHEET" (rect 2 0 37 11)(font "Arial" ))(text "1" (rect 55 5 64 20)(font "Arial" (font_size 10))))
 	(section (rect 310 96 368 120)(text "OF" (rect 10 0 25 11)(font "Arial" ))(text "1" (rect 34 4 43 19)(font "Arial" (font_size 10))))
 	(drawing
