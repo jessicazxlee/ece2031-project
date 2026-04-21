@@ -100,12 +100,12 @@ begin
 		result    => AC_shifted
 	);
 
-	-- Memory address comes from PC during fetch, otherwise from operand
+	-- memory address comes from PC during fetch, otherwise from operand
 	with state select next_mem_addr <=
 		PC when fetch,
 		operand when others;
 
-	-- This makes the operand available immediately after fetch
+	-- this makes the operand available immediately after fetch
 	with state select operand <=
 		mem_data(10 downto 0) when decode,
 		IR(10 downto 0) when others;
@@ -126,7 +126,7 @@ begin
 
 	process (clock, resetn)
 	begin
-		if (resetn = '0') then          -- Active-low asynchronous reset
+		if (resetn = '0') then          -- active-low asynchronous reset
 			state <= init;
 		elsif (rising_edge(clock)) then
 			case state is
@@ -227,13 +227,13 @@ begin
 
 				when ex_jneg =>
 					if (AC(15) = '1') then
-						PC    <= operand;      -- Change the program counter to the operand
+						PC    <= operand;      -- change the program counter to the operand
 					end if;
 					state <= fetch;
 				
 				when ex_jpos =>
 					if (AC(15) = '0' and AC /= x"0000") then
-						PC    <= operand;      -- Change the program counter to the operand
+						PC    <= operand;      -- change the program counter to the operand
 					end if;
 					state <= fetch;
 
@@ -304,7 +304,7 @@ begin
 		end if;
 	end process;
 
-	-- Additional outputs to aid simulation
+	-- additional outputs to aid simulation
 	dbg_FETCH <= '1' when state = fetch else '0';
 	dbg_PC    <= PC;
 	dbg_AC    <= AC;
