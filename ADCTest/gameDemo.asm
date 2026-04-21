@@ -1,21 +1,17 @@
 ORG 0
 
-; =========================================================
 ; ADC Target Game
-; ---------------------------------------------------------
-; Display layout:
-;   HEX3 HEX2 = Target
-;   HEX1 HEX0 = Current ADC/player value
-;
-; LED behavior:
-;   LED0 = too low
-;   LED1 = too high
-;   All LEDs on = within target range / win
-;
+; Hex Definition:
+;     HEX3 HEX2 = Target
+;     HEX1 HEX0 = Current ADC/player value
+; LED Definition:
+;     LED0 = too low
+;     LED1 = too high
+;     All LEDs on = within target range / win
 ; Game flow:
 ; 1. Initialize variables
 ; 2. Wait until all switches are down
-; 3. Generate a random 8-bit target
+; 3. Generate a random 8-bit target when sw9 up
 ; 4. Display the target
 ; 5. Read ADC input through the peripheral
 ; 6. Scale ADC value from 12 bits to 8 bits
@@ -23,38 +19,33 @@ ORG 0
 ; 8. Compare ADC value to target
 ; 9. Show feedback on LEDs
 ; 10. If player wins, pause, increment score, and start next round
-; =========================================================
 
 Start:
-    CALL Init
+    CALL Init               ; initalize game
 
 MainLoop:
-    CALL WaitAllDown        ; Wait until all switches are off
-    CALL GenerateTarget     ; Generate random target
-    CALL DisplayTarget      ; Show target on HEX3:HEX2
+    CALL WaitAllDown        ; wait until all switches are off
+    CALL GenerateTarget     ; generates a random target
+    CALL DisplayTarget      ; show the target on HEX3 HEX2
 
-    LOAD ZeroVal
-    OUT LEDs                ; Clear LEDs at the start of a new round
+    LOAD ZeroVal            ; AC = 0
+    OUT LEDs                ; clear LEDs at the start of a new round
 
 GameLoop:
-    CALL ReadADC            ; Read analog input from ADC
-    CALL DisplayCurrentValue ; Show current ADC value on HEX1:HEX0
-    CALL CompareToTarget    ; Check if ADC value is within range
-    CALL DisplayFeedback    ; Show too low / too high / win on LEDs
+    CALL ReadADC            ; reads analog input through ADC peripheral
+    CALL DisplayCurrentValue ; show current ADC value on HEX1 HEX0
+    CALL CompareToTarget    ; check if ADC value is within range
+    CALL DisplayFeedback    ; shows: too low / too high / win on LEDs
 
-    LOAD WinFlag
-    JZERO GameLoop          ; Keep playing until player wins
+    LOAD WinFlag            ; AC = WinFlag
+    JZERO GameLoop          ; keep playing until player wins / WinFlag = 0
 
-    CALL WinPause           ; Hold win display briefly
-    CALL IncrementScore     ; Increment internal score
-    JUMP MainLoop           ; Start next round
+    CALL WinPause           ; hold win display / LEDs briefly
+    CALL IncrementScore     ; increase player's score
+    JUMP MainLoop           ; start next round
 
 
-; =========================================================
-; Init
-; Reset all variables to zero at the start of the game
-; =========================================================
-Init:
+Init:                       ; all variables set to 0
     LOAD ZeroVal
     STORE Counter
     STORE Target
@@ -66,181 +57,140 @@ Init:
     RETURN
 
 
-; =========================================================
-; WaitAllDown
-; Wait until all switches are turned off before beginning
-; the next round. The switch state is displayed on the LEDs
-; =========================================================
-WaitAllDown:
-    IN Switches
-    OUT LEDs
-    JNZ WaitAllDown
+
+WaitAllDown:               ; waits until all switches are down
+    IN Switches            ; AC = switches
+    OUT LEDs               ; LEDs display switch value
+    JNZ WaitAllDown        ; if AC isn't zero loop again
     RETURN
 
 
-; =========================================================
-; GenerateTarget
-; Uses a free-running counter as a random generator.
-; Counter keeps increasing until SW9 is raised.
-; Then Counter mod 256 becomes the target.
-; =========================================================
-GenerateTarget:
+
+GenerateTarget:           ; counts up like Lab8 until sw9 is raised
 GenLoop:
-    LOAD Counter
-    ADDI 1
-    STORE Counter
+    LOAD Counter          ; AC = counter
+    ADDI 1                ; AC = AC + 1
+    STORE Counter         ; Counter = AC, counter increasing
 
-    IN Switches
-    OUT LEDs
-    AND SW9Mask
-    JZERO GenLoop
+    IN Switches           ; read switch states
+    OUT LEDs              ; switches shown on LEDs
+    AND SW9Mask           ; bit mask to just sw9
+    JZERO GenLoop         ; if sw9 not on loop back
 
-    LOAD Counter
-    AND Mask8Bit
-    STORE Target
+    LOAD Counter          ; final counter value
+    AND Mask8Bit          ; keep lower 8 bits, value = 0 - 255
+    STORE Target          ; save as current round target
     RETURN
 
 
-; =========================================================
-; DisplayTarget
-; Displays the 8-bit target across HEX3:HEX2
-; HEX3 = high nibble
-; HEX2 = low nibble
-; =========================================================
+
 DisplayTarget:
-    LOAD Target
-    AND LowNibbleMask
-    OUT Hex2                ; low nibble of target
+    LOAD Target           ; loads the 8bit target
+    AND LowNibbleMask     ; keep only the bottom 4 bits
+    OUT Hex2              ; low nibble / 4bits of target to Hex2
 
-    LOAD Target
-    SHIFT -4
-    AND LowNibbleMask
-    OUT Hex3                ; high nibble of target
+    LOAD Target           ; loads the 8bit target
+    SHIFT -4              ; high nibble now in lower 4 bits
+    AND LowNibbleMask     ; keep only the bottom 4 bits
+    OUT Hex3              ; high nibble / 4bits of target to Hex3
     RETURN
 
 
-; =========================================================
-; DisplayCurrentValue
-; Displays the current ADC/player value across HEX1:HEX0
-; HEX1 = high nibble
-; HEX0 = low nibble
-; =========================================================
+
 DisplayCurrentValue:
-    LOAD ADCValue
-    AND LowNibbleMask
-    OUT Hex0                ; low nibble of ADC value
+    LOAD ADCValue         ; loads the ADC value
+    AND LowNibbleMask     ; keep only the bottom 4 bits
+    OUT Hex0              ; low nibble of ADC value
 
-    LOAD ADCValue
-    SHIFT -4
-    AND LowNibbleMask
-    OUT Hex1                ; high nibble of ADC value
+    LOAD ADCValue         ; loads the ADC value
+    SHIFT -4              ; high nibble now in lower 4 bits
+    AND LowNibbleMask     ; keep only the bottom 4 bits
+    OUT Hex1              ; high nibble of ADC value
     RETURN
 
 
-; =========================================================
-; ReadADC
-; Reads the ADC peripheral using the known working sequence:
-; 1. Select ADC channel
-; 2. Clear READY
-; 3. Start conversion
-; 4. Poll status until READY = 1
-; 5. Read ADC result
-; 6. Shift right by 4 so 12-bit ADC becomes 8-bit
-; =========================================================
-ReadADC:
-    LOADI 0
-    OUT ADC_CHAN            ; Select ADC channel 0
 
-    LOADI 2
+ReadADC:                    ; select ADC channel, clear ready, convert, poll, read
+    LOADI 0                 ; AC = 0
+    OUT ADC_CHAN            ; select ADC channel 0
+
+    LOADI 2                 ; AC = 2
     OUT ADC_CTRL            ; CLEAR_READY
 
-    LOADI 1
+    LOADI 1                 ; AC = 1
     OUT ADC_CTRL            ; START conversion
 
 PollADC:
-    IN ADC_STAT
-    AND OneVal              ; Check READY bit
-    JZERO PollADC           ; Wait until ready
+    IN ADC_STAT             ; read ADC status
+    AND OneVal              ; check READY at bit 0
+    JZERO PollADC           ; wait until ready = 1
 
-    IN ADC_DATA
-    STORE ADCValue          ; Read ADC result
+    IN ADC_DATA             ; read ADC result
+    STORE ADCValue          ; store ADC result
 
-    LOAD ADCValue
-    SHIFT -4                ; Scale 12-bit ADC to 8-bit
-    AND Mask8Bit
-    STORE ADCValue
+    LOAD ADCValue           ; read ADC result again
+    SHIFT -4                ; scale 12bit ADC to 8bit
+    AND Mask8Bit            ; lower 8bit remains
+    STORE ADCValue          ; store the lower 8bit result
     RETURN
 
 
-; =========================================================
-; CompareToTarget
-; Win if |ADCValue - Target| <= Tolerance
-; With Tolerance = 4, the player wins if ADCValue is within ±4
-; =========================================================
-CompareToTarget:
-    LOAD ZeroVal
-    STORE WinFlag
 
-    LOAD ADCValue
-    SUB Target
-    STORE Diff
+CompareToTarget:            ; win conditions
+    LOAD ZeroVal            ; AC = 0
+    STORE WinFlag           ; WinFlag = 0
+    
+    LOAD ADCValue           ; load player value
+    SUB Target              ; AC = ADCValue - Target
+    STORE Diff              ; store the diff
 
-    ; Convert negative difference to positive
+    ; absValue
     JPOS DiffPositive
     LOAD ZeroVal
-    SUB Diff
+    SUB Diff                ; if Diff was negative now it's pos
     STORE Diff
 
 DiffPositive:
     LOAD Diff
     SUB Tolerance
-    JPOS NotWin
+    JPOS NotWin             ; if AC > 0 player hasn't won yet
 
-    LOAD OneVal
-    STORE WinFlag
+    LOAD OneVal             ; AC = 1, diff within tolerance (4)
+    STORE WinFlag           ; WinFlag = 1
     RETURN
 
 NotWin:
     RETURN
 
 
-; =========================================================
-; DisplayFeedback
-; LED behavior:
-; - Win: all LEDs on
-; - ADCValue < Target: LED0 on
-; - ADCValue > Target: LED1 on
-; =========================================================
-DisplayFeedback:
-    LOAD WinFlag
-    JZERO CheckHighLow
 
-    LOAD AllOn
-    OUT LEDs
+DisplayFeedback:            ; ADCValue < Target = LED0 on, else LED1 on
+    LOAD WinFlag
+    JZERO CheckHighLow      ; if 0, check if player value too high or low
+
+    LOAD AllOn              ; LEDs all on to show win
+    OUT LEDs                ; LEDs display win
     RETURN
 
 CheckHighLow:
-    LOAD ADCValue
-    SUB Target
-    JPOS TooHigh
+    LOAD ADCValue           ; load player value
+    SUB Target              ; AC = ADCValue - Target
+    JPOS TooHigh            ; if positive player is too high
 
 TooLow:
-    LOAD LED0On
+    LOAD LED0On             ; LED0 on since player too low
     OUT LEDs
     RETURN
 
 TooHigh:
-    LOAD LED1On
+    LOAD LED1On             ; LED1 on since player too high
     OUT LEDs
     RETURN
 
 
-; =========================================================
-; WinPause
-; Holds the win display briefly before starting next round
-; =========================================================
+
 WinPause:
-    LOAD DelayCountInit
+    LOAD DelayCountInit     ; delay for win display
     STORE DelayCount
 
 WinPauseLoop:
@@ -254,22 +204,16 @@ WinPauseDone:
     RETURN
 
 
-; =========================================================
-; IncrementScore
-; Increase score after a successful round
-; Score is kept internally for now
-; =========================================================
-IncrementScore:
-    LOAD Score
-    ADDI 1
-    AND Mask8Bit
-    STORE Score
+
+IncrementScore:            ; internal score increment after winning round
+    LOAD Score             ; load current score
+    ADDI 1                 ; score increment
+    AND Mask8Bit           ; wrap score around 255
+    STORE Score            ; store score
     RETURN
 
 
-; =========================================================
 ; I/O Addresses
-; =========================================================
 Switches    EQU 000
 LEDs        EQU 001
 Hex0        EQU 004
@@ -284,9 +228,7 @@ ADC_DATA    EQU &HC2
 ADC_CHAN    EQU &HC3
 
 
-; =========================================================
 ; Constants
-; =========================================================
 ZeroVal:        DW 0
 OneVal:         DW 1
 Tolerance:      DW 4
@@ -299,9 +241,7 @@ AllOn:          DW &H03FF
 DelayCountInit: DW 5000
 
 
-; =========================================================
 ; Variables
-; =========================================================
 Counter:        DW 0
 Target:         DW 0
 ADCValue:       DW 0
