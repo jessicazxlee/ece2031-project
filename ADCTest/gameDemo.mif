@@ -6,20 +6,20 @@ DATA_RADIX=HEX;
 
 CONTENT BEGIN
 0000: 800F; --     CALL Init
-0001: 8018; --     CALL WaitAllDown        ; Wait until all switches are off
-0002: 801C; --     CALL GenerateTarget     ; Generate random target
-0003: 8027; --     CALL DisplayTarget      ; Show target on HEX3:HEX2
+0001: 8018; --     CALL WaitAllDown
+0002: 801C; --     CALL GenerateTarget
+0003: 8027; --     CALL DisplayTarget
 0004: 0872; --     LOAD ZeroVal
-0005: 9801; --     OUT LEDs                ; Clear LEDs at the start of a new round
-0006: 8037; --     CALL ReadADC            ; Read analog input from ADC
-0007: 802F; --     CALL DisplayCurrentValue ; Show current ADC value on HEX1:HEX0
-0008: 8047; --     CALL CompareToTarget    ; Check if ADC value is within range
-0009: 8057; --     CALL DisplayFeedback    ; Show too low / too high / win on LEDs
+0005: 9801; --     OUT LEDs 
+0006: 8037; --     CALL ReadADC
+0007: 802F; --     CALL DisplayCurrentValue
+0008: 8047; --     CALL CompareToTarget
+0009: 8057; --     CALL DisplayFeedback
 000A: 087F; --     LOAD WinFlag
-000B: 7006; --     JZERO GameLoop          ; Keep playing until player wins
-000C: 8065; --     CALL WinPause           ; Hold win display briefly
-000D: 806D; --     CALL IncrementScore     ; Increment internal score
-000E: 5801; --     JUMP MainLoop           ; Start next round
+000B: 7006; --     JZERO GameLoop
+000C: 8065; --     CALL WinPause
+000D: 806D; --     CALL IncrementScore
+000E: 5801; --     JUMP MainLoop
 000F: 0872; --     LOAD ZeroVal
 0010: 107C; --     STORE Counter
 0011: 107D; --     STORE Target
@@ -46,33 +46,33 @@ CONTENT BEGIN
 0026: 8800; --     RETURN
 0027: 087D; --     LOAD Target
 0028: 3876; --     AND LowNibbleMask
-0029: 9806; --     OUT Hex2                ; low nibble of target
+0029: 9806; --     OUT Hex2
 002A: 087D; --     LOAD Target
 002B: 5014; --     SHIFT -4
 002C: 3876; --     AND LowNibbleMask
-002D: 9807; --     OUT Hex3                ; high nibble of target
+002D: 9807; --     OUT Hex3
 002E: 8800; --     RETURN
 002F: 087E; --     LOAD ADCValue
 0030: 3876; --     AND LowNibbleMask
-0031: 9804; --     OUT Hex0                ; low nibble of ADC value
+0031: 9804; --     OUT Hex0
 0032: 087E; --     LOAD ADCValue
 0033: 5014; --     SHIFT -4
 0034: 3876; --     AND LowNibbleMask
-0035: 9805; --     OUT Hex1                ; high nibble of ADC value
+0035: 9805; --     OUT Hex1
 0036: 8800; --     RETURN
 0037: 1800; --     LOADI 0
-0038: 98C3; --     OUT ADC_CHAN            ; Select ADC channel 0
+0038: 98C3; --     OUT ADC_CHAN
 0039: 1802; --     LOADI 2
-003A: 98C0; --     OUT ADC_CTRL            ; CLEAR_READY
+003A: 98C0; --     OUT ADC_CTRL
 003B: 1801; --     LOADI 1
-003C: 98C0; --     OUT ADC_CTRL            ; START conversion
+003C: 98C0; --     OUT ADC_CTRL
 003D: 90C1; --     IN ADC_STAT
-003E: 3873; --     AND OneVal              ; Check READY bit
-003F: 703D; --     JZERO PollADC           ; Wait until ready
+003E: 3873; --     AND OneVal
+003F: 703D; --     JZERO PollADC
 0040: 90C2; --     IN ADC_DATA
-0041: 107E; --     STORE ADCValue          ; Read ADC result
+0041: 107E; --     STORE ADCValue
 0042: 087E; --     LOAD ADCValue
-0043: 5014; --     SHIFT -4                ; Scale 12-bit ADC to 8-bit
+0043: 5014; --     SHIFT -4
 0044: 3875; --     AND Mask8Bit
 0045: 107E; --     STORE ADCValue
 0046: 8800; --     RETURN
